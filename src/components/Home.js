@@ -1,4 +1,5 @@
-import React, { Component } from "react";
+import React, {Component} from "react";
+import Button from "@material-ui/core/Button";
 
 export default class Home extends Component {
 
@@ -7,69 +8,107 @@ export default class Home extends Component {
         this.state = {
             error: null,
             isLoaded: false,
-            items: []
+            items: props.response.catalog.feed.entry,
+            wishlist: this.props.response.wishlist
         };
     }
 
-       componentDidMount = () => {
+    componentDidMount = () => {
+    }
 
+    addMovie = async (target) => {
+        const movieId = target.currentTarget.attributes["itemkey"].value
         var myHeaders = new Headers();
         myHeaders.append("Content-Type", "application/json");
-        myHeaders.append("ACCESS_TOKEN", "eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6IkFzZCIsImlhdCI6MTYwODcxOTU3MiwiZXhwIjoxNjA4NzI2NzcyLCJpc3MiOiJ3aW5reXRlc3QifQ.YnEQnh2tksCOBNTZL8iCmIE_wYyFZ3Mx1HSQ2MWhH4LUxkGUiHWGtfshTufk1Z62SZe5C0MaWKsF9tK706ZAKQ");
-        
-        var raw = JSON.stringify({"movieId":"287917512"});
-        
+        myHeaders.append("ACCESS_TOKEN", this.props.response.token);
+        var raw = JSON.stringify({"movieId": movieId});
+
         var requestOptions = {
-          method: 'POST',
-          headers: myHeaders,
-          body: raw,
-          redirect: 'follow'
+            method: 'POST',
+            headers: myHeaders,
+            body: raw,
+            redirect: 'follow'
         };
-        
-        fetch("http://localhost:3002/user/movie", requestOptions)
-          .then(response => response.text())
-          .then(result => console.log(result))
-          .catch(error => console.log('error', error));
-        
-        
 
-    //     fetch('https://itunes.apple.com/us/rss/topmovies/limit=25/json')
-    //         .then(res => res.json())
-    //         .then(
-    //             (result) => {
+        let serverResponse = await new Promise((resolve, reject) => {
+            fetch("http://localhost:3002/user/movie", requestOptions)
+                .then(response => {
+                    resolve(response.text());
+                })
+                .catch(error => reject(error));
+        })
+        serverResponse = JSON.parse(serverResponse);
+        if (serverResponse && serverResponse.error) {
+            alert(serverResponse.error);
+            return;
+        }
+        this.setState({wishlist: serverResponse.wishlist})
+    }
 
-    //                 this.setState({
-    //                     items: result.feed.entry
-    //                 });
-    //             },
-    //             // Note: it's important to handle errors here
-    //             // instead of a catch() block so that we don't swallow
-    //             // exceptions from actual bugs in components.
-    //             (error) => {
-    //                 //   this.setState({
-    //                 //     isLoaded: true,
-    //                 //     error
-    //                 //   });
-    //             }
-    //         )
-      }
+    deleteMovie = async (target) => {
+        const movieId = target.currentTarget.attributes["itemkey"].value
+        var myHeaders = new Headers();
+        myHeaders.append("Content-Type", "application/json");
+        myHeaders.append("ACCESS_TOKEN", this.props.response.token);
+        var raw = JSON.stringify({"movieId": movieId});
+
+        var requestOptions = {
+            method: 'DELETE',
+            headers: myHeaders,
+            body: raw,
+            redirect: 'follow'
+        };
+
+        let serverResponse = await new Promise((resolve, reject) => {
+            fetch("http://localhost:3002/user/movie", requestOptions)
+                .then(response => {
+                    resolve(response.text());
+                })
+                .catch(error => reject(error));
+        })
+        serverResponse = JSON.parse(serverResponse);
+        if (serverResponse && serverResponse.error) {
+            alert(serverResponse.error);
+            return;
+        }
+        this.setState({wishlist: serverResponse.wishlist})
+    }
 
     render() {
         const items = this.state.items;
         return (
             <div>
-                {/* <ul>
+                <ul style={{float: 'left', width: "50%", "text-align": "left", margin: '2px 10px', display: "inline"}}>
                     {items.map(item => (
-                        <li key={item.id}>
-                          <h1></h1>
-                          Title : {item.title.label}
-                          <h1></h1>
-                           Summary :{item.summary.label}
-                           <h1></h1>
-                           <img src={item['im:image'][0].label} />;
+                        <li key={item.id.attributes["im:id"]}>
+                            <h1/>
+                            <Button itemKey={item.id.attributes["im:id"]}
+                                    onClick={this.addMovie}>Add to wishlist</Button>
+                            <h1/>
+                            <Button itemKey={item.id.attributes["im:id"]}
+                                    onClick={this.deleteMovie}>Delete from wishlist</Button>
+                            <h1/>
+
+                            Title : {item.title.label}
+                            <h1/>
+                            Summary :{item.summary.label}
+                            <h1/>
+                            <img src={item['im:image'][0].label}/>;
                         </li>
                     ))}
-                </ul> */}
+                </ul>
+                <ul style={{"text-align": "left", margin: '2px 10px', display: "inline"}}>
+                    {this.state.wishlist.map(item => (
+                        <li key={item.id.attributes["im:id"]}>
+                            Title : {item.title.label}
+                            <h1/>
+                            Summary :{item.summary.label}
+                            <h1/>
+                            <img src={item['im:image'][0].label}/>;
+                        </li>
+                    ))}
+                </ul>
+
             </div>
         )
     }
